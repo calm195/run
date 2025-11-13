@@ -46,20 +46,18 @@ func Viper() *viper.Viper {
 //	@return configPath
 func getConfigPath() string {
 	configDir := DevDir
-	fileName := DefaultConfigFileName
-	fmt.Println("config dir:", configDir)
-	fmt.Println("config file:", fileName)
+	var fileName string
+	flag.StringVar(&fileName, FileFlag, DefaultConfigFileName, "config file name")
+	isProd := flag.Bool(ProdFlag, false, "prod flag")
 
 	flag.Parse()
-	if flag.Lookup(ProdFlag) != nil {
+
+	if *isProd {
 		configDir = ProdDir
 	}
-	if flag.Lookup(FileFlag) != nil {
-		fileName = *flag.String(FileFlag, DefaultConfigFileName, "config file name")
+	if fileName != DefaultConfigFileName {
 		fileName = fileName + ConfigFileSuffix
 	}
-	fmt.Println("config dir:", configDir)
-	fmt.Println("config file:", fileName)
 
 	configPath := filepath.Join(configDir, fileName)
 	return configPath

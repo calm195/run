@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"run/core"
 	"run/global"
 )
@@ -12,7 +11,5 @@ import (
 //go:generate go mod download
 
 func main() {
-	fmt.Println("begin")
 	global.Vp = core.Viper()
-	fmt.Println("end")
 }
