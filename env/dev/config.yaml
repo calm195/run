@@ -1,0 +1,11 @@
+pgsql:
+  path: ""
+  port: ""
+  username: ""
+  password: ""
+  db-name: ""
+  config: "" # 连接参数
+  max-idle: 10 # 空闲中的最大连接数
+  max-open: 100 # 打开到数据库的最大连接数
+  log-mode: "" # 是否开启Gorm全局日志，默认为info，可不填
+  log-zap: false  # 是否通过zap写入日志文件

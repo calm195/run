@@ -26,10 +26,7 @@ _test.go
 vendor
 
 # local config files
-configs/pro/*
-configs/dev/*
-configs/config-all.yaml
-configs/config-release.yaml
+env/prod/*
 
 logs
 log
