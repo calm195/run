@@ -1,5 +1,5 @@
 pgsql:
-  path: ""
+  path: "localhost"
   port: ""
   username: ""
   password: ""
@@ -9,3 +9,14 @@ pgsql:
   max-open: 100 # 打开到数据库的最大连接数
   log-mode: "" # 是否开启Gorm全局日志，默认为info，可不填
   log-zap: false  # 是否通过zap写入日志文件
+
+zap:
+  level: debug
+  prefix: "[run]"
+  format: console
+  director: logs
+  show-line: true
+  encode-level: LowercaseColorLevelEncoder
+  stacktrace-key: stacktrace
+  log-in-console: true
+  retention-day: -1

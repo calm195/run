@@ -1,0 +1,83 @@
+package core
+
+import (
+	"os"
+	"run/global"
+	"time"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
+
+// ZapCore
+//
+//	@Description: zapcore.Core 与 zapcore.Level 的自定义实现，用于处理日志的写入和同步
+type ZapCore struct {
+	level zapcore.Level
+	zapcore.Core
+}
+
+// NewZapCore
+//
+//	@Description: 根据给定的日志级别创建一个新的 ZapCore 实例
+//	@param level zapcore.Level 日志级别
+//	@return *ZapCore zapcore.Core 实例
+func NewZapCore(level zapcore.Level) *ZapCore {
+	entity := &ZapCore{level: level}
+	syncer := entity.WriteSyncer()
+	levelEnabler := zap.LevelEnablerFunc(func(l zapcore.Level) bool {
+		return l == level
+	})
+	entity.Core = zapcore.NewCore(global.Config.Zap.Encoder(), syncer, levelEnabler)
+	return entity
+}
+
+// WriteSyncer
+//
+//	@Description:
+//	@receiver z
+//	@param formats
+//	@return zapcore.WriteSyncer
+func (z *ZapCore) WriteSyncer(formats ...string) zapcore.WriteSyncer {
+	cutter := NewCutter(
+		global.Config.Zap.Director,
+		z.level.String(),
+		global.Config.Zap.RetentionDay,
+		CutterWithLayout(time.DateOnly),
+		CutterWithFormats(formats...),
+	)
+	if global.Config.Zap.LogInConsole {
+		multiSyncer := zapcore.NewMultiWriteSyncer(os.Stdout, cutter)
+		return zapcore.AddSync(multiSyncer)
+	}
+	return zapcore.AddSync(cutter)
+}
+
+func (z *ZapCore) Enabled(level zapcore.Level) bool {
+	return z.level == level
+}
+
+func (z *ZapCore) With(fields []zapcore.Field) zapcore.Core {
+	return z.Core.With(fields)
+}
+
+func (z *ZapCore) Check(entry zapcore.Entry, check *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	if z.Enabled(entry.Level) {
+		return check.AddCore(entry, z)
+	}
+	return check
+}
+
+func (z *ZapCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
+	for i := 0; i < len(fields); i++ {
+		if fields[i].Key == "business" || fields[i].Key == "folder" || fields[i].Key == "directory" {
+			syncer := z.WriteSyncer(fields[i].String)
+			z.Core = zapcore.NewCore(global.Config.Zap.Encoder(), syncer, z.level)
+		}
+	}
+	return z.Core.Write(entry, fields)
+}
+
+func (z *ZapCore) Sync() error {
+	return z.Core.Sync()
+}

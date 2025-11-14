@@ -12,4 +12,5 @@ import (
 
 func main() {
 	global.Vp = core.Viper()
+	global.Log = core.Zap()
 }
