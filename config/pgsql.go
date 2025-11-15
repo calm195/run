@@ -1,5 +1,11 @@
 package config
 
+import (
+	"strings"
+
+	"gorm.io/gorm/logger"
+)
+
 type PgsqlConfig struct {
 	Path               string `mapstructure:"path" json:"path" yaml:"path"`                            // 数据库主机地址
 	Port               string `mapstructure:"port" json:"port" yaml:"port"`                            // 数据库端口
@@ -13,9 +19,30 @@ type PgsqlConfig struct {
 	LogZap             bool   `mapstructure:"log-zap" json:"log-zap" yaml:"log-zap"`                   // 是否通过zap写入日志文件
 }
 
+func (c *PgsqlConfig) LogLevel() logger.LogLevel {
+	switch strings.ToLower(c.LogMode) {
+	case "silent":
+		return logger.Silent
+	case "error":
+		return logger.Error
+	case "warn":
+		return logger.Warn
+	case "info":
+		return logger.Info
+	default:
+		return logger.Info
+	}
+}
+
 // Dsn 基于配置文件获取 dsn
 func (c *PgsqlConfig) Dsn() string {
 	return "host=" + c.Path + " user=" + c.Username + " password=" + c.Password + " dbname=" + c.Dbname + " port=" + c.Port + " " + c.Config
+}
+
+// DefaultDsn 基于配置文件获取 默认dsn
+func (c *PgsqlConfig) DefaultDsn() string {
+	defaultDbName := "postgres"
+	return "host=" + c.Path + " user=" + c.Username + " password=" + c.Password + " dbname=" + defaultDbName + " port=" + c.Port + " " + c.Config
 }
 
 // LinkDsn 根据 dbname 生成 dsn
