@@ -1,3 +1,7 @@
+system:
+  port: 8888 # 默认值 8888
+  router-prefix: run
+
 pgsql:
   path: "localhost"
   port: "5432"

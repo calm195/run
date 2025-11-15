@@ -1,6 +1,7 @@
 package core
 
 const (
+	DefaultPort           = 8888
 	FileFlag              = "f"
 	ProdFlag              = "p"
 	ConfigFileSuffix      = ".yaml"

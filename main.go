@@ -16,4 +16,5 @@ func main() {
 	global.Log = core.Zap()
 	global.Db = orm.Gorm()
 	orm.RegisterTables()
+	core.RunServer()
 }
