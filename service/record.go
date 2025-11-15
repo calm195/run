@@ -3,6 +3,7 @@ package service
 import (
 	"run/global"
 	"run/models"
+	"run/models/constant"
 	"run/models/request"
 
 	"go.uber.org/zap"
@@ -14,7 +15,7 @@ func (r *RecordService) CreateRecord(recordCreateReq request.RecordCreateReq) (e
 	var game models.Game
 	err = global.Db.First(&game, recordCreateReq.GameId).Error
 	if err != nil {
-		global.Log.Error("game id invalid", zap.Error(err))
+		global.Log.Error(constant.NotExist, zap.Uint("game id", recordCreateReq.GameId), zap.Error(err))
 		return
 	}
 
@@ -28,7 +29,7 @@ func (r *RecordService) CreateRecord(recordCreateReq request.RecordCreateReq) (e
 	record := recordCreateReq.CreateRecord()
 	if err = tx.Create(record).Error; err != nil {
 		tx.Rollback()
-		global.Log.Error("create record failed", zap.Any("record", record), zap.Error(err))
+		global.Log.Error(constant.CreateFail, zap.Any("record", record), zap.Error(err))
 	}
 
 	gameRecord := models.GameRecord{
@@ -37,41 +38,37 @@ func (r *RecordService) CreateRecord(recordCreateReq request.RecordCreateReq) (e
 	}
 	if err = tx.Create(&gameRecord).Error; err != nil {
 		tx.Rollback()
-		global.Log.Error("create game record failed", zap.Any("gameRecord", gameRecord), zap.Error(err))
+		global.Log.Error(constant.CreateFail, zap.Any("gameRecord", gameRecord), zap.Error(err))
 	}
 
 	if err = tx.Commit().Error; err != nil {
 		tx.Rollback()
-		global.Log.Error("commit record failed", zap.Error(err))
+		global.Log.Error(constant.CommitFail, zap.Error(err))
 	}
 
-	global.Log.Info("record created", zap.Any("record", record), zap.Any("gameRecord", gameRecord))
+	global.Log.Info(constant.CommitSuccess)
 	return
 }
 
 func (r *RecordService) UpdateRecord(recordUpdateReq request.RecordUpdateReq) (err error) {
 	var repo models.Record
 	if err = global.Db.First(&repo, recordUpdateReq.Id).Error; err != nil {
-		global.Log.Error("record id invalid", zap.Any("record", recordUpdateReq), zap.Error(err))
+		global.Log.Error(constant.NotExist, zap.Uint("record id", recordUpdateReq.Id), zap.Error(err))
 		return
 	}
 
 	err = global.Db.Model(&repo).Updates(recordUpdateReq).Error
-	if err != nil {
-		global.Log.Error("update record failed", zap.Any("record", recordUpdateReq), zap.Error(err))
-		return
-	}
 	return
 }
 
 func (r *RecordService) ListRecords(gameId uint) (records []models.Record, err error) {
 	if err = global.Db.First(&models.Game{}, gameId).Error; err != nil {
-		global.Log.Error("game not found", zap.Uint("game id", gameId), zap.Error(err))
+		global.Log.Error(constant.NotExist, zap.Uint("game id", gameId), zap.Error(err))
 		return
 	}
 	var gameRecordList []models.GameRecord
 	if err = global.Db.Where("game_id = ?", gameId).Find(&gameRecordList).Error; err != nil {
-		global.Log.Error("found game record error", zap.Uint("game id", gameId), zap.Error(err))
+		global.Log.Error(constant.NotExist, zap.Uint("game id", gameId), zap.Error(err))
 		return
 	}
 
@@ -80,7 +77,7 @@ func (r *RecordService) ListRecords(gameId uint) (records []models.Record, err e
 		recordIds = append(recordIds, gameRecord.RecordId)
 	}
 	if err = global.Db.Find(&records, recordIds).Error; err != nil {
-		global.Log.Error("found record error", zap.Any("gameRecordList", gameRecordList), zap.Error(err))
+		global.Log.Error(constant.NotExist, zap.Uints("record ids", recordIds), zap.Error(err))
 		return
 	}
 	return
@@ -96,19 +93,20 @@ func (r *RecordService) DeleteRecord(ids []uint) (err error) {
 
 	if err = tx.Delete(&models.Record{}, ids).Error; err != nil {
 		tx.Rollback()
-		global.Log.Error("delete record failed", zap.Uints("record id", ids), zap.Error(err))
+		global.Log.Error(constant.DeleteFail, zap.Uints("record id", ids), zap.Error(err))
 		return
 	}
 
 	if err = tx.Delete(&models.GameRecord{}, "record_id IN (?)", ids).Error; err != nil {
 		tx.Rollback()
-		global.Log.Error("found game record error", zap.Uints("record id", ids), zap.Error(err))
+		global.Log.Error(constant.DeleteFail, zap.Uints("record id", ids), zap.Error(err))
 		return
 	}
 
 	if err = tx.Commit().Error; err != nil {
 		tx.Rollback()
-		global.Log.Error("commit record failed", zap.Error(err))
+		global.Log.Error(constant.CommitFail, zap.Error(err))
 	}
+	global.Log.Info(constant.CreateSuccess)
 	return
 }

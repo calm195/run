@@ -2,6 +2,7 @@ package api
 
 import (
 	"run/global"
+	"run/models/constant"
 	"run/models/request"
 	"run/models/response"
 
@@ -14,72 +15,72 @@ type RecordApi struct{}
 func (r *RecordApi) CreateRecord(c *gin.Context) {
 	var req request.RecordCreateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		global.Log.Error("request invalid", zap.Error(err))
-		response.FailWithDetailed(req, "request invalid", c)
+		global.Log.Error(constant.RequestInvalid, zap.Error(err))
+		response.FailWithMessage(constant.RequestInvalid, c)
 		return
 	}
 
 	err := recordService.CreateRecord(req)
 	if err != nil {
-		global.Log.Error("create record failed", zap.Error(err))
-		response.FailWithDetailed(req, "create record failed", c)
+		global.Log.Error(constant.CreateFail, zap.Error(err))
+		response.FailWithDetailed(req, constant.CreateFail, c)
 		return
 	}
 
-	global.Log.Info("create record success", zap.Any("req", req))
-	response.OkWithMessage("create record successfully", c)
+	global.Log.Info(constant.CreateSuccess, zap.Any("req", req))
+	response.OkWithMessage(constant.CreateSuccess, c)
 }
 
 func (r *RecordApi) UpdateRecord(c *gin.Context) {
 	var req request.RecordUpdateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		global.Log.Error("request invalid", zap.Error(err))
-		response.FailWithDetailed(req, "request invalid", c)
+		global.Log.Error(constant.RequestInvalid, zap.Error(err))
+		response.FailWithMessage(constant.RequestInvalid, c)
 		return
 	}
 
 	err := recordService.UpdateRecord(req)
 	if err != nil {
-		global.Log.Error("update record failed", zap.Error(err))
-		response.FailWithDetailed(req, "update record failed", c)
+		global.Log.Error(constant.UpdateFail, zap.Error(err))
+		response.FailWithDetailed(req, constant.UpdateFail, c)
 		return
 	}
-	global.Log.Info("update record success", zap.Any("req", req))
-	response.OkWithMessage("update record successfully", c)
+	global.Log.Info(constant.UpdateSuccess, zap.Any("req", req), zap.Any("req", req))
+	response.OkWithMessage(constant.UpdateSuccess, c)
 }
 
 func (r *RecordApi) DeleteRecord(c *gin.Context) {
 	var ids []uint
 	if err := c.ShouldBindJSON(&ids); err != nil {
-		global.Log.Error("parse record id failed", zap.Error(err))
-		response.FailWithMessage("parse record id failed", c)
+		global.Log.Error(constant.RequestInvalid, zap.Error(err))
+		response.FailWithMessage(constant.RequestInvalid, c)
 		return
 	}
 
 	err := recordService.DeleteRecord(ids)
 	if err != nil {
-		global.Log.Error("delete record failed", zap.Error(err))
-		response.Fail(c)
+		global.Log.Error(constant.DeleteFail, zap.Error(err))
+		response.FailWithDetailed(ids, constant.DeleteFail, c)
 		return
 	}
-	global.Log.Info("delete record success", zap.Uints("ids", ids))
-	response.OkWithMessage("delete record successfully", c)
+	global.Log.Info(constant.DeleteSuccess, zap.Uints("ids", ids))
+	response.OkWithMessage(constant.DeleteSuccess, c)
 }
 
 func (r *RecordApi) ListRecords(c *gin.Context) {
 	var gameId uint
 	if err := c.ShouldBindJSON(&gameId); err != nil {
-		global.Log.Error("request invalid", zap.Error(err))
-		response.FailWithMessage("request invalid", c)
+		global.Log.Error(constant.RequestInvalid, zap.Error(err))
+		response.FailWithMessage(constant.RequestInvalid, c)
 		return
 	}
 
 	records, err := recordService.ListRecords(gameId)
 	if err != nil {
-		global.Log.Error("get record failed", zap.Error(err))
-		response.FailWithMessage("get record failed", c)
+		global.Log.Error(constant.ListFail, zap.Error(err))
+		response.FailWithDetailed(gameId, constant.ListFail, c)
 		return
 	}
-	global.Log.Info("get record success", zap.Any("records", records))
-	response.OkWithDetailed(records, "list records successfully", c)
+	global.Log.Info(constant.ListSuccess, zap.Any("records", records))
+	response.OkWithDetailed(records, constant.ListSuccess, c)
 }

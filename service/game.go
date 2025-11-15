@@ -9,14 +9,15 @@ import (
 	"run/models/response"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type GameService struct{}
 
 func (g *GameService) CreateGame(game request.GameCreateReq) (err error) {
 	if constant.IfGameTypeNotExist(game.Type) {
-		global.Log.Error("game type not exist")
-		return errors.New("game type not exist")
+		global.Log.Error(constant.GameTypeInvalid)
+		return errors.New(constant.GameTypeInvalid)
 	}
 	err = global.Db.Create(game.CreateGame()).Error
 	return err
@@ -24,15 +25,14 @@ func (g *GameService) CreateGame(game request.GameCreateReq) (err error) {
 
 func (g *GameService) UpdateGame(game request.GameUpdateReq) (err error) {
 	if constant.IfGameTypeNotExist(game.Type) {
-		global.Log.Error("game type not exist")
-		return errors.New("game type not exist")
+		global.Log.Error(constant.GameTypeInvalid)
+		return errors.New(constant.GameTypeInvalid)
 	}
 
 	var repo models.Game
-	err = global.Db.First(&repo, game.Id).Error
-	if err != nil {
-		global.Log.Error("the game record not exits", zap.Error(err))
-		return errors.New("the game record not exits")
+	if err = global.Db.First(&repo, game.Id).Error; err != nil {
+		global.Log.Error(constant.NotExist, zap.Uint("game id", game.Id), zap.Error(err))
+		return
 	}
 
 	err = global.Db.Model(&repo).Updates(game).Error
@@ -51,15 +51,43 @@ func (g *GameService) ListAllGames() (gameWebViewRspList []response.GameWebViewR
 }
 
 func (g *GameService) DeleteGame(ids []uint) (err error) {
-	err = global.Db.Delete(&models.Game{}, ids).Error
-	return err
+	var games []models.Game
+	if err = global.Db.Find(&games, ids).Error; err != nil {
+		global.Log.Error(constant.FindFail, zap.Uints("ids", ids), zap.Error(err))
+		return
+	}
+
+	var gameRecordList []models.GameRecord
+	if err = global.Db.Where("game_id in (?)", ids).Find(&gameRecordList).Error; err != nil {
+		global.Log.Error(constant.FindFail, zap.Uints("game ids", ids), zap.Error(err))
+	}
+
+	var recordIds []uint
+	for _, gameRecord := range gameRecordList {
+		recordIds = append(recordIds, gameRecord.RecordId)
+	}
+
+	return global.Db.Transaction(func(tx *gorm.DB) error {
+		if err = tx.Delete(&games).Error; err != nil {
+			global.Log.Error(constant.DeleteFail, zap.Error(err))
+			return err
+		}
+		if err = tx.Delete(&gameRecordList).Error; err != nil {
+			global.Log.Error(constant.DeleteFail, zap.Error(err))
+			return err
+		}
+		if err = tx.Delete(&models.Record{}, recordIds).Error; err != nil {
+			global.Log.Error(constant.DeleteFail, zap.Error(err))
+			return err
+		}
+		return nil
+	})
 }
 
 func (g *GameService) GetRecordNum(id uint) (num int64, err error) {
 	var game models.Game
-	err = global.Db.First(&game, id).Error
-	if err != nil {
-		global.Log.Error("get game record num failed", zap.Error(err))
+	if err = global.Db.First(&game, id).Error; err != nil {
+		global.Log.Error(constant.FindFail, zap.Error(err))
 		num = -1
 		return
 	}
