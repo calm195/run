@@ -2,6 +2,7 @@ package orm
 
 import (
 	"run/global"
+	"run/models"
 	"time"
 
 	"go.uber.org/zap"
@@ -71,4 +72,23 @@ func Gorm() *gorm.DB {
 		global.Log.Info("connect to database successfully", zap.String("config", p.Dsn()))
 		return db
 	}
+}
+
+func RegisterTables() {
+	if global.Db == nil {
+		global.Log.Fatal("not connect database")
+		return
+	}
+
+	db := global.Db
+	err := db.AutoMigrate(
+		&models.Game{},
+		&models.Record{},
+		&models.GameRecord{},
+	)
+	if err != nil {
+		global.Log.Fatal("failed to migrate table", zap.Error(err))
+		panic(err.Error())
+	}
+	global.Log.Info("register table successfully")
 }

@@ -15,4 +15,5 @@ func main() {
 	global.Vp = core.Viper()
 	global.Log = core.Zap()
 	global.Db = orm.Gorm()
+	orm.RegisterTables()
 }
