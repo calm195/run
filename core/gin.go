@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -28,21 +27,13 @@ func RunServer() {
 		address = fmt.Sprintf(":%d", global.Config.System.Port)
 	}
 
-	r := gin.Default()
-	r.Use(gin.Recovery())
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "ok",
-		})
-	})
 	svr := &http.Server{
 		Addr:           address,
-		Handler:        r,
+		Handler:        Routers(),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
-
 	go func() {
 		if err := svr.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			zap.L().Fatal("server start error", zap.String("port", address), zap.Error(err))

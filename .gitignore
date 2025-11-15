@@ -30,3 +30,4 @@ env/prod/*
 
 logs
 log
+tmp

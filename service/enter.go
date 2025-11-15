@@ -1,0 +1,7 @@
+package service
+
+var RootGroup = new(Group)
+
+type Group struct {
+	GameService
+}

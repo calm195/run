@@ -1,8 +1,14 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Base struct {
-	Id         int64     `gorm:"column:id;comment:主键ID" json:"id"`
-	CreateTime time.Time `gorm:"column:create_time;comment:创建时间" json:"create_time"`
+	Id        uint           `gorm:"column:id;comment:主键ID" json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
