@@ -28,4 +28,7 @@ func registerRouters(engine *gin.Engine) {
 
 	gameRouter := router.RootGroup.Game
 	gameRouter.InitGameRouter(rootGroup)
+
+	recordRouter := router.RootGroup.Record
+	recordRouter.InitRecordRouter(rootGroup)
 }

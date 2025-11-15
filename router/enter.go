@@ -5,9 +5,11 @@ import "run/api"
 var RootGroup = new(Group)
 
 type Group struct {
-	Game GameRouter
+	Game   GameRouter
+	Record RecordRouter
 }
 
 var (
-	gameApi = api.RootGroup.GameApi
+	gameApi   = api.RootGroup.GameApi
+	recordApi = api.RootGroup.RecordApi
 )

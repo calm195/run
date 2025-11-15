@@ -4,4 +4,5 @@ var RootGroup = new(Group)
 
 type Group struct {
 	GameService
+	RecordService
 }

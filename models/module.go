@@ -28,8 +28,8 @@ func (Game) TableName() string {
 
 type GameRecord struct {
 	Base
-	GameId   int64 `gorm:"column:game_id;comment:项目/赛事主键id" json:"game_id"`
-	RecordId int64 `gorm:"column:record_id;comment:单次数据主键id" json:"record_id"`
+	GameId   uint `gorm:"column:game_id;comment:项目/赛事主键id" json:"game_id"`
+	RecordId uint `gorm:"column:record_id;comment:单次数据主键id" json:"record_id"`
 }
 
 func (GameRecord) TableName() string {
