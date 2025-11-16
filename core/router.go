@@ -11,6 +11,7 @@ import (
 func Routers() *gin.Engine {
 	engine := gin.New()
 	engine.Use(gin.Recovery())
+	engine.Use(NewCors())
 	if gin.IsDebugging() {
 		engine.Use(gin.Logger())
 	}
