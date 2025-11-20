@@ -50,6 +50,13 @@ func (g *GameService) ListAllGames() (gameWebViewRspList []response.GameWebViewR
 	return gameWebViewRspList, err
 }
 
+func (g *GameService) GetGameById(id uint) (gameWebViewRsp response.GameWebViewRsp, err error) {
+	var repo models.Game
+	err = global.Db.First(&repo, id).Error
+	gameWebViewRsp.CreateWebViewRsp(repo)
+	return gameWebViewRsp, err
+}
+
 func (g *GameService) DeleteGame(ids []uint) (err error) {
 	var games []models.Game
 	if err = global.Db.Find(&games, ids).Error; err != nil {

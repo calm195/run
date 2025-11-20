@@ -10,6 +10,7 @@ func (g *GameRouter) InitGameRouter(router *gin.RouterGroup) {
 	gameRouter.POST("/create", gameApi.CreateGame)
 	gameRouter.PUT("/edit", gameApi.UpdateGame)
 	gameRouter.GET("/list", gameApi.ListAllGames)
+	gameRouter.GET("/get", gameApi.GetGameById)
 	gameRouter.DELETE("/delete", gameApi.DeleteGame)
 	gameRouter.GET("/num", gameApi.GetRecordNum)
 }

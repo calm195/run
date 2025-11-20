@@ -5,6 +5,7 @@ import (
 	"run/models/constant"
 	"run/models/request"
 	"run/models/response"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -68,12 +69,20 @@ func (r *RecordApi) DeleteRecord(c *gin.Context) {
 }
 
 func (r *RecordApi) ListRecords(c *gin.Context) {
-	var gameId uint
-	if err := c.ShouldBindJSON(&gameId); err != nil {
-		global.Log.Error(constant.RequestInvalid, zap.Error(err))
+	gameIdString := c.Query("id")
+	if gameIdString == "" {
+		global.Log.Error(constant.RequestInvalid, zap.Any("query", c))
 		response.FailWithMessage(constant.RequestInvalid, c)
 		return
 	}
+
+	gameIdUint64, err := strconv.ParseUint(gameIdString, 10, 64)
+	if err != nil {
+		global.Log.Error(constant.RequestInvalid, zap.Error(err))
+		response.Fail(c)
+		return
+	}
+	gameId := uint(gameIdUint64)
 
 	records, err := recordService.ListRecords(gameId)
 	if err != nil {

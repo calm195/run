@@ -60,6 +60,32 @@ func (g *GameApi) ListAllGames(c *gin.Context) {
 	response.OkWithDetailed(games, constant.ListSuccess, c)
 }
 
+func (g *GameApi) GetGameById(c *gin.Context) {
+	gameIdString := c.Query("id")
+	if gameIdString == "" {
+		global.Log.Error(constant.RequestInvalid, zap.Any("query", c))
+		response.FailWithMessage(constant.RequestInvalid, c)
+		return
+	}
+
+	gameIdUint64, err := strconv.ParseUint(gameIdString, 10, 64)
+	if err != nil {
+		global.Log.Error(constant.RequestInvalid, zap.Error(err))
+		response.Fail(c)
+		return
+	}
+	gameId := uint(gameIdUint64)
+
+	game, err := gameService.GetGameById(gameId)
+	if err != nil {
+		global.Log.Error(constant.ListFail, zap.Error(err))
+		response.FailWithMessage(constant.ListFail, c)
+		return
+	}
+	global.Log.Info(constant.FindSuccess, zap.Any("game", game))
+	response.OkWithDetailed(game, constant.ListSuccess, c)
+}
+
 func (g *GameApi) DeleteGame(c *gin.Context) {
 	idsStrArray := c.QueryArray("ids")
 	if len(idsStrArray) == 0 || (len(idsStrArray) == 1 && idsStrArray[0] == "") {
