@@ -5,6 +5,7 @@ import (
 	"run/models/constant"
 	"run/models/request"
 	"run/models/response"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -60,11 +61,22 @@ func (g *GameApi) ListAllGames(c *gin.Context) {
 }
 
 func (g *GameApi) DeleteGame(c *gin.Context) {
-	var ids []uint
-	if err := c.ShouldBindJSON(&ids); err != nil {
-		global.Log.Error(constant.RequestInvalid, zap.Error(err))
-		response.FailWithMessage(constant.RequestInvalid, c)
+	idsStrArray := c.QueryArray("ids")
+	if len(idsStrArray) == 0 || (len(idsStrArray) == 1 && idsStrArray[0] == "") {
+		global.Log.Error(constant.RequestInvalid, zap.Strings("ids received", idsStrArray))
+		response.Fail(c)
 		return
+	}
+
+	var ids []uint
+	for _, idStr := range idsStrArray {
+		idUint64, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			global.Log.Error(constant.RequestInvalid, zap.String("invalid_id", idStr), zap.Strings("full_ids_param", idsStrArray))
+			response.Fail(c)
+			return
+		}
+		ids = append(ids, uint(idUint64))
 	}
 
 	err := gameService.DeleteGame(ids)

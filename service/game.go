@@ -72,9 +72,15 @@ func (g *GameService) DeleteGame(ids []uint) (err error) {
 			global.Log.Error(constant.DeleteFail, zap.Error(err))
 			return err
 		}
+		if len(gameRecordList) <= 0 {
+			return nil
+		}
 		if err = tx.Delete(&gameRecordList).Error; err != nil {
 			global.Log.Error(constant.DeleteFail, zap.Error(err))
 			return err
+		}
+		if len(recordIds) <= 0 {
+			return nil
 		}
 		if err = tx.Delete(&models.Record{}, recordIds).Error; err != nil {
 			global.Log.Error(constant.DeleteFail, zap.Error(err))
