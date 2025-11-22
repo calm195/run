@@ -76,7 +76,7 @@ func (r *RecordService) ListRecords(gameId uint) (records []models.Record, err e
 	for _, gameRecord := range gameRecordList {
 		recordIds = append(recordIds, gameRecord.RecordId)
 	}
-	if err = global.Db.Find(&records, recordIds).Error; err != nil {
+	if err = global.Db.Where("id IN ?", recordIds).Find(&records).Error; err != nil {
 		global.Log.Error(constant.NotExist, zap.Uints("record ids", recordIds), zap.Error(err))
 		return
 	}

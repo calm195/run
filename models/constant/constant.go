@@ -34,7 +34,8 @@ const (
 )
 
 const (
-	OneHundred = iota
+	_ = iota
+	OneHundred
 	TwoHundred
 	FourHundred
 	EightHundred
