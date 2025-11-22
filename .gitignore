@@ -31,3 +31,5 @@ env/prod/*
 logs
 log
 tmp
+
+bin
