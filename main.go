@@ -4,6 +4,7 @@ import (
 	"run/core"
 	"run/global"
 	"run/orm"
+	initializer "run/orm/init"
 )
 
 //go:generate go env -w GO111MODULE=on
@@ -15,6 +16,6 @@ func main() {
 	global.Vp = core.Viper()
 	global.Log = core.Zap()
 	global.Db = orm.Gorm()
-	orm.RegisterTables()
+	initializer.TableAndData()
 	core.RunServer()
 }

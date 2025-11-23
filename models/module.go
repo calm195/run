@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"run/models/types"
+	"time"
+)
 
 type Record struct {
 	Base
@@ -34,4 +37,27 @@ type GameRecord struct {
 
 func (GameRecord) TableName() string {
 	return "game_record"
+}
+
+type Event struct {
+	Base
+	Name     string `gorm:"column:name;comment:运动项目名称" json:"name"`
+	Distance int32  `gorm:"column:distance;comment:距离" json:"distance"`
+}
+
+func (Event) TableName() string {
+	return "event"
+}
+
+type Standard struct {
+	Base
+	EventID        uint                 `gorm:"not null;index:idx_standards_lookup,priority:1;comment:项目ID" json:"event_id"`
+	Gender         types.Gender         `gorm:"type:smallint;not null;index:idx_standards_lookup,priority:2;comment:性别 1=男 2=女" json:"gender"`
+	Level          types.Level          `gorm:"type:smallint;not null;index:idx_standards_lookup,priority:4;comment:等级 1=健将 2=一级 3=二级 4=三级 5=参与级" json:"level"`
+	Threshold      float64              `gorm:"type:double precision;not null;comment:达标成绩（秒），成绩 ≤ 该值即达标" json:"threshold"`
+	StandardSystem types.StandardSystem `gorm:"type:smallint;not null;default:2;index:idx_standards_lookup,priority:3;comment:标准体系 1=体测 2=中国 3=国际" json:"standard_system"`
+}
+
+func (Standard) TableName() string {
+	return "standard"
 }
