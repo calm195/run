@@ -30,5 +30,6 @@ const (
 	CommitSuccess = "commit success"
 	CommitFail    = "commit fail"
 
-	NotExist = "not exist"
+	NotExist  = "not exist"
+	QueryFail = "query fail"
 )

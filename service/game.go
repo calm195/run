@@ -14,97 +14,166 @@ import (
 
 type GameService struct{}
 
-func (g *GameService) CreateGame(game request.GameCreateReq) (err error) {
-	if constant.IfGameTypeNotExist(game.Type) {
-		global.Log.Error(constant.GameTypeInvalid)
+func (g *GameService) CreateGame(req request.GameCreateReq) (err error) {
+	if constant.IfGameTypeNotExist(req.Type) {
+		global.Log.Error(constant.GameTypeInvalid, zap.Int16("type", req.Type))
 		return errors.New(constant.GameTypeInvalid)
 	}
-	err = global.Db.Create(game.CreateGame()).Error
+
+	gameModel := req.CreateGame()
+	if gameModel == nil {
+		err = errors.New("CreateGame returned nil")
+		global.Log.Error("CreateGame returned nil", zap.Any("req", req))
+		return err
+	}
+
+	err = global.Db.Create(gameModel).Error
+	if err != nil {
+		global.Log.Error(constant.CreateFail,
+			zap.Int16("type", req.Type),
+			zap.Any("game", gameModel),
+			zap.Error(err))
+	}
 	return err
 }
 
-func (g *GameService) UpdateGame(game request.GameUpdateReq) (err error) {
-	if constant.IfGameTypeNotExist(game.Type) {
-		global.Log.Error(constant.GameTypeInvalid)
+func (g *GameService) UpdateGame(req request.GameUpdateReq) error {
+	if req.Id == 0 {
+		err := errors.New("game id is required")
+		global.Log.Error("game id is zero", zap.Any("req", req))
+		return err
+	}
+
+	if constant.IfGameTypeNotExist(req.Type) {
+		global.Log.Error(constant.GameTypeInvalid, zap.Int16("type", req.Type))
 		return errors.New(constant.GameTypeInvalid)
 	}
 
-	var repo models.Game
-	if err = global.Db.First(&repo, game.Id).Error; err != nil {
-		global.Log.Error(constant.NotExist, zap.Uint("game id", game.Id), zap.Error(err))
-		return
+	result := global.Db.Model(&models.Game{}).
+		Where("id = ?", req.Id).
+		Omit("id").
+		Updates(req)
+
+	if result.Error != nil {
+		global.Log.Error(constant.UpdateFail,
+			zap.Uint("game_id", req.Id),
+			zap.Int16("type", req.Type),
+			zap.Error(result.Error))
+		return result.Error
 	}
 
-	err = global.Db.Model(&repo).Updates(game).Error
-	return
+	if result.RowsAffected == 0 {
+		global.Log.Warn(constant.NotExist, zap.Uint("game_id", req.Id))
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }
 
-func (g *GameService) ListAllGames() (gameWebViewRspList []response.GameWebViewRsp, err error) {
+func (g *GameService) ListAllGames() ([]response.GameWebViewRsp, error) {
 	var repos []models.Game
-	err = global.Db.Find(&repos).Error
-	for _, item := range repos {
-		var gameWebViewRsp response.GameWebViewRsp
-		gameWebViewRsp.CreateWebViewRsp(item)
-		gameWebViewRspList = append(gameWebViewRspList, gameWebViewRsp)
+	if err := global.Db.Find(&repos).Error; err != nil {
+		global.Log.Error(constant.QueryFail, zap.Error(err))
+		return nil, err
 	}
-	return gameWebViewRspList, err
+
+	rspList := make([]response.GameWebViewRsp, len(repos))
+	for i, item := range repos {
+		rspList[i].CreateWebViewRsp(item)
+	}
+	return rspList, nil
 }
 
-func (g *GameService) GetGameById(id uint) (gameWebViewRsp response.GameWebViewRsp, err error) {
+func (g *GameService) GetGameById(id uint) (response.GameWebViewRsp, error) {
+	if id == 0 {
+		return response.GameWebViewRsp{}, gorm.ErrRecordNotFound
+	}
+
 	var repo models.Game
-	err = global.Db.First(&repo, id).Error
-	gameWebViewRsp.CreateWebViewRsp(repo)
-	return gameWebViewRsp, err
+	err := global.Db.First(&repo, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			global.Log.Warn(constant.NotExist, zap.Uint("game_id", id))
+		} else {
+			global.Log.Error(constant.FindFail, zap.Uint("game_id", id), zap.Error(err))
+		}
+		return response.GameWebViewRsp{}, err
+	}
+
+	var rsp response.GameWebViewRsp
+	rsp.CreateWebViewRsp(repo)
+	return rsp, nil
 }
 
-func (g *GameService) DeleteGame(ids []uint) (err error) {
-	var games []models.Game
-	if err = global.Db.Find(&games, ids).Error; err != nil {
-		global.Log.Error(constant.FindFail, zap.Uints("ids", ids), zap.Error(err))
-		return
+func (g *GameService) DeleteGame(ids []uint) error {
+	if len(ids) == 0 {
+		global.Log.Warn("attempt to delete games with empty id list")
+		return nil
 	}
 
-	var gameRecordList []models.GameRecord
-	if err = global.Db.Where("game_id in (?)", ids).Find(&gameRecordList).Error; err != nil {
-		global.Log.Error(constant.FindFail, zap.Uints("game ids", ids), zap.Error(err))
+	validIDs := make([]uint, 0, len(ids))
+	for _, id := range ids {
+		if id == 0 {
+			global.Log.Warn("skip deleting game with id=0")
+			continue
+		}
+		validIDs = append(validIDs, id)
 	}
-
-	var recordIds []uint
-	for _, gameRecord := range gameRecordList {
-		recordIds = append(recordIds, gameRecord.RecordId)
+	if len(validIDs) == 0 {
+		return nil
 	}
 
 	return global.Db.Transaction(func(tx *gorm.DB) error {
-		if err = tx.Delete(&games).Error; err != nil {
-			global.Log.Error(constant.DeleteFail, zap.Error(err))
+		var recordIDs []uint
+		if err := tx.Model(&models.GameRecord{}).
+			Where("game_id IN ?", validIDs).
+			Pluck("record_id", &recordIDs).Error; err != nil {
+			global.Log.Error(constant.FindFail, zap.Uints("game_ids", validIDs), zap.Error(err))
 			return err
 		}
-		if len(gameRecordList) <= 0 {
-			return nil
-		}
-		if err = tx.Delete(&gameRecordList).Error; err != nil {
-			global.Log.Error(constant.DeleteFail, zap.Error(err))
+
+		if err := tx.Where("game_id IN ?", validIDs).Delete(&models.GameRecord{}).Error; err != nil {
+			global.Log.Error(constant.DeleteFail, zap.String("table", "game_records"), zap.Error(err))
 			return err
 		}
-		if len(recordIds) <= 0 {
-			return nil
+
+		if len(recordIDs) > 0 {
+			if err := tx.Delete(&models.Record{}, recordIDs).Error; err != nil {
+				global.Log.Error(constant.DeleteFail, zap.String("table", "records"), zap.Uints("record_ids", recordIDs), zap.Error(err))
+				return err
+			}
+			global.Log.Info("records deleted due to game deletion", zap.Int("count", len(recordIDs)), zap.Uints("game_ids", validIDs))
 		}
-		if err = tx.Delete(&models.Record{}, recordIds).Error; err != nil {
-			global.Log.Error(constant.DeleteFail, zap.Error(err))
-			return err
+
+		result := tx.Delete(&models.Game{}, validIDs)
+		if result.Error != nil {
+			global.Log.Error(constant.DeleteFail, zap.String("table", "game"), zap.Error(result.Error))
+			return result.Error
 		}
+
+		global.Log.Info("games deleted successfully",
+			zap.Uints("game_ids", validIDs),
+			zap.Int64("games_deleted", result.RowsAffected),
+			zap.Int("records_deleted", len(recordIDs)))
+
 		return nil
 	})
 }
 
-func (g *GameService) GetRecordNum(id uint) (num int64, err error) {
-	var game models.Game
-	if err = global.Db.First(&game, id).Error; err != nil {
-		global.Log.Error(constant.FindFail, zap.Error(err))
-		num = -1
-		return
+func (g *GameService) GetRecordNum(gameID uint) (int64, error) {
+	if gameID == 0 {
+		return 0, errors.New("game id is required")
 	}
 
-	err = global.Db.Model(&models.GameRecord{}).Where("game_id=?", game.Id).Count(&num).Error
-	return
+	var count int64
+	err := global.Db.Model(&models.GameRecord{}).
+		Where("game_id = ?", gameID).
+		Count(&count).Error
+
+	if err != nil {
+		global.Log.Error(constant.QueryFail, zap.Uint("game_id", gameID), zap.Error(err))
+		return 0, err
+	}
+
+	return count, nil
 }

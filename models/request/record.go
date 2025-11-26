@@ -41,12 +41,24 @@ func (r RecordCreateReq) CreateRecord() *models.Record {
 	}
 }
 
+// TimeComponentsNotZero
+// 自定义验证函数
+// 函数签名必须是 func(fl validator.FieldLevel) bool
+func TimeComponentsNotZero(fl validator.FieldLevel) bool {
+	// 获取当前正在验证的结构体实例
+	record := fl.Parent().Interface().(RecordUpdateReq)
+
+	// 检查 Hour, Minute, Second, Microsecond 是否都为 0
+	return record.Hour != 0 || record.Minute != 0 || record.Second != 0 || record.Microsecond != 0
+}
+
 type RecordUpdateReq struct {
 	Id          uint      `json:"id" binding:"required"`
 	Name        string    `json:"name" binding:"required"`
 	Hour        int16     `json:"hour" binding:"min=0"`
 	Minute      int16     `json:"minute" binding:"min=0,max=59"`
-	Second      int16     `json:"second" binding:"required,min=0,max=59"`
-	Microsecond int16     `json:"microsecond" binding:"required,min=0,max=999"`
+	Second      int16     `json:"second" binding:"min=0,max=59"`
+	Microsecond int16     `json:"microsecond" binding:"min=0,max=999"`
 	Finish      time.Time `json:"finish"`
+	_           struct{}  `binding:"timeComponentsNotZero"`
 }
