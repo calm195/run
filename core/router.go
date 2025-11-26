@@ -32,4 +32,10 @@ func registerRouters(engine *gin.Engine) {
 
 	recordRouter := router.RootGroup.Record
 	recordRouter.InitRecordRouter(rootGroup)
+
+	eventRouter := router.RootGroup.Event
+	eventRouter.InitRouter(rootGroup)
+
+	standardRouter := router.RootGroup.Standard
+	standardRouter.InitRouter(rootGroup)
 }
