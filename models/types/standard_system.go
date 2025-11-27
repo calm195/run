@@ -50,7 +50,7 @@ func ParseStandardSystem(str string) (StandardSystem, error) {
 }
 
 func (s StandardSystem) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.String())
+	return json.Marshal(int8(s))
 }
 
 func (s *StandardSystem) UnmarshalJSON(data []byte) error {

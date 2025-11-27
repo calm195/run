@@ -60,7 +60,7 @@ func ParseLevel(s string) (Level, error) {
 }
 
 func (l Level) MarshalJSON() ([]byte, error) {
-	return json.Marshal(l.String())
+	return json.Marshal(int8(l))
 }
 
 func (l *Level) UnmarshalJSON(data []byte) error {

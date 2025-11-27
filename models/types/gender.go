@@ -41,7 +41,7 @@ func ParseGender(s string) (Gender, error) {
 
 // MarshalJSON 输出为可读字符串
 func (g Gender) MarshalJSON() ([]byte, error) {
-	return json.Marshal(g.String())
+	return json.Marshal(int8(g))
 }
 
 // UnmarshalJSON 支持从数字或字符串反序列化
