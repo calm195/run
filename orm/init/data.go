@@ -7,7 +7,6 @@ import (
 	"run/models"
 	"run/models/constant"
 	"run/util"
-	"runtime"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -42,9 +41,7 @@ func initEvents() {
 }
 
 func initStandards() {
-	_, filename, _, _ := runtime.Caller(0)
-	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(filename))) // 从 orm/init/data.go 回到根目录
-	csvPath := filepath.Join(projectRoot, "env", "standard.csv")
+	csvPath := filepath.Join("env", "standard.csv")
 	standards, err := util.LoadStandardsFromCSV(csvPath)
 	if err != nil {
 		global.Log.Fatal("failed to load standards csv", zap.Error(err))

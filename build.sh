@@ -34,6 +34,8 @@ if [ -d "${ENV_SOURCE_DIR}" ]; then
   echo "📁 复制配置目录..."
   rm -rf "${OUTPUT_DIR}/env"
   cp -r "${ENV_SOURCE_DIR}" "${OUTPUT_DIR}/"
+  cp "start.sh" "${OUTPUT_DIR}/"
+  cp "stop.sh" "${OUTPUT_DIR}/"
 else
   echo "⚠️ 配置目录 ${ENV_SOURCE_DIR} 不存在，跳过"
 fi
@@ -42,11 +44,11 @@ fi
 echo "📡 正在上传到 ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR} ..."
 
 # 确保远程目录存在
-ssh "${REMOTE_USER}@${REMOTE_HOST}" "mkdir -p ${REMOTE_DIR}"
+ssh "${REMOTE_USER}@${REMOTE_HOST}" "mkdir -p ${REMOTE_DIR} && cd ${REMOTE_DIR} && sh stop.sh"
 
 # 上传整个 bin/ 内容（覆盖）
 scp -r "${OUTPUT_DIR}/"* "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/"
 
-echo "✅ 上传完成！"
-echo "💡 登录服务器后，可执行："
-echo "   cd /root/run && ./run"
+ssh "${REMOTE_USER}@${REMOTE_HOST}" "cd ${REMOTE_DIR} && sh start.sh"
+
+echo "✅ 部署完成！"
